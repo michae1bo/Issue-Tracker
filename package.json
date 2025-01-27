@@ -26,5 +26,6 @@
 		"hyperdev",
 		"express"
 	],
-	"license": "MIT"
+	"license": "MIT",
+	"type": "commonjs"
 }
