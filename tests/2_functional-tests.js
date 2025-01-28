@@ -127,4 +127,79 @@ suite('Functional Tests', function(done) {
                 done();
             })
     })
+    test('PUT: Update one field on an issue', function (done) {
+        chai.request(server)
+            .keepOpen()
+            .put(`/api/issues/${projectId}`)
+            .type('form')
+            .send({
+                _id: ids[0],
+                issue_title: "new title"
+            })
+            .end(function (err, res) {
+                assert.equal(res.status, 200);
+                assert.equal(res.text, `{"result":"successfully updated","_id":"${ids[0]}"}`);
+                done();
+            })
+    })
+    test('PUT: Update multiple fields', function (done) {
+        chai.request(server)
+            .keepOpen()
+            .put(`/api/issues/${projectId}`)
+            .type('form')
+            .send({
+                _id: ids[1],
+                issue_text: "new text",
+                open: 'false'
+            })
+            .end(function (err, res) {
+                assert.equal(res.status, 200);
+                assert.equal(res.text, `{"result":"successfully updated","_id":"${ids[1]}"}`);
+                done();
+            })
+    })
+    test('PUT: Update with missing _id', function (done) {
+        chai.request(server)
+            .keepOpen()
+            .put(`/api/issues/${projectId}`)
+            .type('form')
+            .send({
+                issue_text: "new text",
+                open: 'false'
+            })
+            .end(function (err, res) {
+                assert.equal(res.status, 200);
+                assert.equal(res.text, '{"error":"missing _id"}');
+                done();
+            })
+    })
+    test('PUT: Update with no fields to update', function (done) {
+        chai.request(server)
+            .keepOpen()
+            .put(`/api/issues/${projectId}`)
+            .type('form')
+            .send({
+                _id: ids[1]
+            })
+            .end(function (err, res) {
+                assert.equal(res.status, 200);
+                assert.equal(res.text, `{"error":"no update field(s) sent","_id":"${ids[1]}"}`);
+                done();
+            })
+    })
+    test('PUT: Update with invalid _id', function (done) {
+        chai.request(server)
+            .keepOpen()
+            .put(`/api/issues/${projectId}`)
+            .type('form')
+            .send({
+                _id: 'invalid',
+                issue_text: 'this is a cool new text'
+            })
+            .end(function (err, res) {
+                assert.equal(res.status, 200);
+                assert.equal(res.text, '{"error":"could not update","_id":"invalid"}');
+                done();
+            })
+    })
 });
