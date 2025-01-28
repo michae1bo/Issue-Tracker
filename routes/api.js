@@ -34,7 +34,7 @@ module.exports =  function (app) {
         let issues = projectResponse.issues;
         if (req.query._id) {
           issues = issues.filter((issue) => {
-            return issue._id == req.query._id;
+            return issue._id.toString() == req.query._id;
           });
         }
         if (req.query.issue_title) {
@@ -61,7 +61,6 @@ module.exports =  function (app) {
           issues = issues.filter((issue) => {
             return issue.created_by === req.query.created_by;
           });
-          console.log(issues);
         }
         if (req.query.assigned_to) {
           issues = issues.filter((issue) => {
@@ -117,14 +116,98 @@ module.exports =  function (app) {
       res.json(response);
     })
     
-    .put(function (req, res){
+    .put(async function (req, res){
       let project = req.params.project;
-      
+      let response;
+      let projectResponse = await IssueTracker.findOne({ project: project });
+      if (projectResponse === null) {
+        response = { error: 'no such project'}; 
+      } else {
+        if (req.body._id) {
+          let foundId = false;
+          let issueIndex;
+          for (let i = 0; i < projectResponse.issues.length; i++) {
+            if (projectResponse.issues[i]._id.toString() === req.body._id) {
+              issueIndex = i;
+              foundId = true;
+              break;
+            }
+          }
+          if (req.body.issue_title || req.body.issue_text || req.body.created_by || req.body.assigned_to || req.body.status_text || req.body.open) {
+            if (foundId) {
+              if (req.body.issue_title) {
+                projectResponse.issues[issueIndex].issue_title = req.body.issue_title;
+              }
+              if (req.body.issue_text) {
+                projectResponse.issues[issueIndex].issue_text = req.body.issue_text;
+              }
+              if (req.body.created_by) {
+                projectResponse.issues[issueIndex].created_by = req.body.created_by;
+              }
+              if (req.body.assigned_to) {
+                projectResponse.issues[issueIndex].assigned_to = req.body.assigned_to;
+              }
+              if (req.body.status_text) {
+                projectResponse.issues[issueIndex].status_text = req.body.status_text;
+              }
+              if (req.body.open === 'false') {
+                projectResponse.issues[issueIndex].open = false;
+              } else if (req.body.open === 'true') {
+                projectResponse.issues[issueIndex].open = true;
+              }
+              projectResponse.issues[issueIndex].updated_on = new Date().toString();
+              const gotSaved = await projectResponse.save();
+              if (gotSaved === null) {
+                response = { error: 'could not update', '_id': req.body_id };
+              } else {
+                response = {  result: 'successfully updated', '_id': req.body._id };
+              }
+            } else {
+              response = { error: 'could not update', '_id': req.body._id };
+            }
+          } else {
+            response = { error: 'no update field(s) sent', '_id': req.body._id }
+          }
+        } else {
+          response = { error: 'missing _id' };
+        } 
+      } 
+      res.json(response);
     })
     
-    .delete(function (req, res){
+    .delete(async function (req, res){
       let project = req.params.project;
-      
+      let response;
+      let projectResponse = await IssueTracker.findOne({ project: project });
+      if (projectResponse === null) {
+        response = { error: 'no such project'}; 
+      } else {
+        if (req.body._id) {
+          let foundId = false;
+          let issueIndex;
+          for (let i = 0; i < projectResponse.issues.length; i++) {
+            if (projectResponse.issues[i]._id.toString() === req.body._id) {
+              issueIndex = i;
+              foundId = true;
+              break;
+            }
+          }
+          if (foundId) {
+            projectResponse.issues = projectResponse.issues.slice(0, issueIndex).concat(projectResponse.issues.slice(issueIndex + 1));
+            const gotSaved = await projectResponse.save();
+            if (gotSaved === null) {
+              response = { error: 'could not delete', '_id': req.body._id };
+            } else {
+              response = { result: 'successfully deleted', '_id': req.body._id };
+            }
+          } else {
+            response = { error: 'could not delete', '_id': req.body._id };
+          }
+        } else {
+          response = { error: 'missing _id' };
+        }
+      }
+      res.json(response);
     });
     
 };
